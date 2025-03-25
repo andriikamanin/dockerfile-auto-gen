@@ -1,33 +1,34 @@
 package it.volta.ts.kamaninandrii.dockerfilegen.service;
 
 import it.volta.ts.kamaninandrii.dockerfilegen.model.ProjectType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Map;
 
 @Service
 public class ProjectAnalyzerService {
 
+    private final Map<String, ProjectType> fileToProjectTypeMap;
+
+    @Autowired
+    public ProjectAnalyzerService(Map<String, ProjectType> projectFileMappings) {
+        this.fileToProjectTypeMap = projectFileMappings;
+    }
+
     public ProjectType analyzeProject(String projectPath) {
-        Path path = Paths.get(new File(projectPath).getAbsolutePath());
+        Path path = Path.of(projectPath);
 
         System.out.println("Анализируем проект по пути: " + path);
 
-        if (Files.exists(path.resolve("requirements.txt"))) {
-            System.out.println("Найден requirements.txt → Python");
-            return ProjectType.PYTHON;
-        } else if (Files.exists(path.resolve("package.json"))) {
-            System.out.println("Найден package.json → Node.js");
-            return ProjectType.NODEJS;
-        } else if (Files.exists(path.resolve("go.mod"))) {
-            System.out.println("Найден go.mod → Go");
-            return ProjectType.GO;
-        } else if (Files.exists(path.resolve("pom.xml")) || Files.exists(path.resolve("build.gradle")) || Files.exists(path.resolve("settings.gradle"))) {
-            System.out.println("Найден  → Java");
-            return ProjectType.JAVA;
+        // Проверка наличия файлов с использованием маппинга
+        for (Map.Entry<String, ProjectType> entry : fileToProjectTypeMap.entrySet()) {
+            if (Files.exists(path.resolve(entry.getKey()))) {
+                System.out.println("Найден " + entry.getKey() + " → " + entry.getValue());
+                return entry.getValue();
+            }
         }
 
         System.out.println("Файлы не найдены → UNKNOWN");
